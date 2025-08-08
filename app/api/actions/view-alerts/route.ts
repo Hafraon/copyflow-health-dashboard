@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/monitoring';
+// import { prisma } from '@/lib/monitoring'; // Динамічний імпорт для уникнення build errors
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic'; // Уникнення static generation для API routes
 
 export async function GET(request: NextRequest) {
   try {
     console.log('🚨 [VIEW-ALERTS] Fetching active alerts...');
+    
+    // Динамічний імпорт prisma
+    const { prisma } = await import('@/lib/monitoring');
     
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -129,6 +133,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     console.log('🚨 [VIEW-ALERTS] Creating test alert...');
+    
+    // Динамічний імпорт prisma
+    const { prisma } = await import('@/lib/monitoring');
     
     const body = await request.json();
     const { title, description, severity = 'info', service = 'test' } = body;

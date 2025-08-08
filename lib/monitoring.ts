@@ -1,6 +1,9 @@
 // CopyFlow Health Dashboard - Monitoring Library
 // Production version для PostgreSQL на Railway
 
+// Force dynamic import for Prisma Client
+export const dynamic = 'force-dynamic'
+
 import { PrismaClient } from '@prisma/client'
 
 // Ініціалізація Prisma клієнта для моніторингу

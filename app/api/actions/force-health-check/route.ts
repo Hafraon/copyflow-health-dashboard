@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSystemHealth } from '@/lib/monitoring';
+// import { getSystemHealth } from '@/lib/monitoring'; // Динамічний імпорт для уникнення build errors
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic'; // Уникнення static generation для API routes
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,6 +11,7 @@ export async function POST(request: NextRequest) {
     const startTime = Date.now();
     
     // Викликати comprehensive health check
+    const { getSystemHealth } = await import('@/lib/monitoring');
     const healthResults = await getSystemHealth();
     
     const processingTime = Date.now() - startTime;
