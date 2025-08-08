@@ -190,6 +190,36 @@ export default function MetricsGrid() {
     }
   };
 
+  const handleTestTelegram = async () => {
+    setLoading('telegram');
+    setResults(null);
+    try {
+      const response = await fetch('/api/telegram', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'test' })
+      });
+      
+      const data = await response.json();
+      setResults({ type: 'telegram', data });
+      setShowResults(true);
+    } catch (error) {
+      setResults({ 
+        type: 'telegram', 
+        data: { 
+          success: false, 
+          error: 'Failed to test Telegram bot',
+          details: error instanceof Error ? error.message : 'Network error'
+        } 
+      });
+      setShowResults(true);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const formatResults = () => {
     if (!results) return null;
 
@@ -280,6 +310,33 @@ export default function MetricsGrid() {
           </div>
         );
 
+      case 'telegram':
+        return (
+          <div className={`${data.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4`}>
+            <h4 className={`font-medium mb-3 ${data.success ? 'text-green-900' : 'text-red-900'}`}>
+              {data.success ? '✅ Telegram Test' : '❌ Telegram Test Failed'}
+            </h4>
+            <div className="space-y-2">
+              <p className="text-sm"><strong>Status:</strong> {data.success ? 'Success' : 'Failed'}</p>
+              <p className="text-sm"><strong>Processing Time:</strong> {data.processingTime}</p>
+              {data.message && <p className="text-sm"><strong>Message:</strong> {data.message}</p>}
+              {data.status && (
+                <div className="mt-3">
+                  <p className="text-xs font-medium text-gray-700">Configuration Status:</p>
+                  <div className="text-xs bg-white p-2 rounded border mt-1">
+                    <p><strong>Configured:</strong> {data.status.configured ? 'Yes' : 'No'}</p>
+                    <p><strong>Bot Token:</strong> {data.status.botToken ? 'Set' : 'Missing'}</p>
+                    <p><strong>Chat ID:</strong> {data.status.chatId ? 'Set' : 'Missing'}</p>
+                  </div>
+                </div>
+              )}
+              {!data.success && data.details && (
+                <p className="text-sm text-red-600"><strong>Error:</strong> {data.details}</p>
+              )}
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -301,7 +358,7 @@ export default function MetricsGrid() {
       {/* Quick Actions */}
       <div className="mt-8 bg-gray-50 rounded-lg p-6 border border-gray-200">
         <h4 className="font-medium text-gray-900 mb-4">Quick Actions</h4>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <button 
             onClick={handleForceHealthCheck}
             disabled={loading === 'health'}
@@ -344,6 +401,21 @@ export default function MetricsGrid() {
             )}
             <span className="text-sm font-medium text-gray-700">
               {loading === 'alerts' ? 'Loading...' : 'View Alerts'}
+            </span>
+          </button>
+          
+          <button 
+            onClick={handleTestTelegram}
+            disabled={loading === 'telegram'}
+            className="flex items-center justify-center space-x-2 py-2 px-4 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading === 'telegram' ? (
+              <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+            ) : (
+              <span className="text-blue-600">📱</span>
+            )}
+            <span className="text-sm font-medium text-gray-700">
+              {loading === 'telegram' ? 'Testing...' : 'Test Telegram'}
             </span>
           </button>
         </div>

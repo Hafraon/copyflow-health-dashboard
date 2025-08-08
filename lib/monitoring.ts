@@ -52,7 +52,7 @@ export async function getSystemHealth(): Promise<HealthStatus[]> {
       'database',
       'payment',
       'openai-elite',
-      'openai-standard'
+      'openai-universal'
     ]
     
     const healthChecks = await Promise.allSettled(
@@ -88,7 +88,7 @@ export async function checkServiceHealth(service: string): Promise<HealthStatus>
       case 'database':
         return await checkDatabaseHealth()
       case 'openai-elite':
-      case 'openai-standard':
+      case 'openai-universal':
         return await checkOpenAIHealth(service)
       default:
         return await checkGenericServiceHealth(service)
@@ -179,7 +179,9 @@ async function checkOpenAIHealth(assistantType: string): Promise<HealthStatus> {
       responseTime,
       lastCheck: new Date(),
       metadata: { 
-        assistantId: process.env.OPENAI_ASSISTANT_ELITE?.substring(0, 10) + '...',
+        assistantId: assistantType === 'openai-elite' ? 
+          process.env.OPENAI_ASSISTANT_ELITE?.substring(0, 10) + '...' :
+          process.env.OPENAI_ASSISTANT_UNIVERSAL?.substring(0, 10) + '...',
         apiKeyConfigured: !!process.env.OPENAI_API_KEY
       }
     }
@@ -347,17 +349,32 @@ async function triggerAlert(rule: AlertRule, metrics: any): Promise<void> {
 }
 
 async function sendAlert(rule: AlertRule, metrics: any): Promise<void> {
-  // Тут буде логіка відправки email/telegram
   console.log(`🚨 ALERT: ${rule.name} - ${rule.metric}: ${metrics[rule.metric]}`)
+  
+  // Telegram notification
+  try {
+    const { sendTelegramAlert } = await import('./telegram-alerts')
+    
+    await sendTelegramAlert(
+      rule.name,
+      `${rule.metric} threshold exceeded: ${metrics[rule.metric]} ${rule.operator} ${rule.threshold}`,
+      rule.severity as any,
+      'monitoring',
+      {
+        metric: rule.metric,
+        value: metrics[rule.metric],
+        threshold: rule.threshold,
+        operator: rule.operator,
+        ruleName: rule.name
+      }
+    )
+  } catch (error) {
+    console.error('Failed to send Telegram alert:', error)
+  }
   
   // Email notification
   if (process.env.ALERT_EMAIL_TO) {
     // await sendEmailAlert(rule, metrics)
-  }
-  
-  // Telegram notification  
-  if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
-    // await sendTelegramAlert(rule, metrics)
   }
 }
 
@@ -369,7 +386,7 @@ async function getActiveUsersCount(): Promise<number> {
 
 async function getOnlineAssistantsCount(): Promise<number> {
   // Перевірка доступності асистентів
-  return 2 // Elite + Standard
+  return 2 // Elite + Universal
 }
 
 // 🔄 BACKGROUND TASKS
