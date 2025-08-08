@@ -2,7 +2,14 @@
   "name": "copyflow-health-dashboard",
   "version": "1.0.0",
   "description": "Professional health monitoring dashboard for CopyFlow - Anthropic-style status page with real-time metrics and intelligent alerting",
-  "keywords": ["monitoring", "dashboard", "health-check", "status-page", "alerts", "copyflow"],
+  "keywords": [
+    "monitoring",
+    "dashboard",
+    "health-check",
+    "status-page",
+    "alerts",
+    "copyflow"
+  ],
   "author": "CopyFlow Team",
   "license": "MIT",
   "scripts": {
@@ -38,34 +45,34 @@
     "postinstall": "npm run db:generate"
   },
   "dependencies": {
-    "next": "^14.2.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "@prisma/client": "^5.22.0",
-    "prisma": "^5.22.0",
-    "tailwindcss": "^3.4.0",
     "autoprefixer": "^10.4.16",
-    "postcss": "^8.4.31",
-    "lucide-react": "^0.263.1",
-    "recharts": "^2.8.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
-    "tailwind-merge": "^2.0.0",
     "date-fns": "^2.30.0",
+    "lucide-react": "^0.263.1",
+    "next": "^14.2.0",
     "node-cron": "^3.0.3",
+    "node-telegram-bot-api": "^0.66.0",
     "nodemailer": "^6.9.0",
-    "node-telegram-bot-api": "^0.64.0"
+    "postcss": "^8.4.31",
+    "prisma": "^5.22.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.8.0",
+    "tailwind-merge": "^2.0.0",
+    "tailwindcss": "^3.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.8.0",
+    "@types/node-cron": "^3.0.0",
+    "@types/node-telegram-bot-api": "^0.64.0",
+    "@types/nodemailer": "^6.4.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "@types/node-cron": "^3.0.0",
-    "@types/nodemailer": "^6.4.0",
-    "@types/node-telegram-bot-api": "^0.64.0",
-    "typescript": "^5.2.0",
     "eslint": "^8.51.0",
-    "eslint-config-next": "^14.2.0"
+    "eslint-config-next": "^14.2.0",
+    "typescript": "^5.2.0"
   },
   "engines": {
     "node": ">=18.0.0",
