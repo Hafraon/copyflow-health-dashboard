@@ -1,0 +1,87 @@
+{
+  "name": "copyflow-health-dashboard",
+  "version": "1.0.0",
+  "description": "Professional health monitoring dashboard for CopyFlow - Anthropic-style status page with real-time metrics and intelligent alerting",
+  "keywords": ["monitoring", "dashboard", "health-check", "status-page", "alerts", "copyflow"],
+  "author": "CopyFlow Team",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start -p ${PORT:-3001}",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio --port 5556",
+    "db:reset": "prisma db push --force-reset",
+    "postbuild": "npx prisma generate",
+    "railway:deploy": "railway up",
+    "railway:logs": "railway logs",
+    "railway:status": "railway status",
+    "test": "node test-system.js",
+    "test:alerts": "node -e \"const { alertService } = require('./lib/alerts'); alertService.testAllChannels().then(console.log);\"",
+    "test:email": "node -e \"const { emailAlertService } = require('./lib/alerts/email'); emailAlertService.testConnection().then(console.log);\"",
+    "test:telegram": "node -e \"const { telegramAlertService } = require('./lib/alerts/telegram'); telegramAlertService.testConnection().then(console.log);\"",
+    "setup": "npm install && npm run db:generate && npm run db:push",
+    "setup:local": "quick-start.bat",
+    "setup:unix": "chmod +x setup.sh && ./setup.sh",
+    "monitor:start": "npm run dev",
+    "monitor:prod": "npm run build && npm start",
+    "health:check": "curl ${RAILWAY_STATIC_URL:-http://localhost:3001}/api/health || echo Dashboard not running",
+    "metrics:test": "curl -X POST ${RAILWAY_STATIC_URL:-http://localhost:3001}/api/metrics -H Content-Type: application/json -d {\\\"metric\\\":\\\"test\\\",\\\"value\\\":123} || echo Dashboard not running",
+    "alerts:send-test": "node -e \"const { quickAlert } = require('./lib/alerts'); quickAlert('Test Alert', 'Testing CopyFlow Health Dashboard alerting system', 'info');\"",
+    "docs:serve": "echo Documentation available in README.md, QUICK_START.md, and other .md files",
+    "clean": "rmdir /s .next node_modules & del package-lock.json",
+    "postinstall": "npm run db:generate"
+  },
+  "dependencies": {
+    "next": "^14.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@prisma/client": "^5.22.0",
+    "prisma": "^5.22.0",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.31",
+    "lucide-react": "^0.263.1",
+    "recharts": "^2.8.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "tailwind-merge": "^2.0.0",
+    "date-fns": "^2.30.0",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.0",
+    "node-telegram-bot-api": "^0.64.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/node-cron": "^3.0.0",
+    "@types/nodemailer": "^6.4.0",
+    "@types/node-telegram-bot-api": "^0.64.0",
+    "typescript": "^5.2.0",
+    "eslint": "^8.51.0",
+    "eslint-config-next": "^14.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "config": {
+    "port": "${PORT:-3001}",
+    "database": "postgresql",
+    "monitoring": {
+      "refresh_interval": 30000,
+      "health_check_interval": 60000,
+      "alert_cooldown": 300000,
+      "retention_days": 90
+    }
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  }
+}

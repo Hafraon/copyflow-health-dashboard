@@ -1,0 +1,172 @@
+// CopyFlow Health Dashboard - Monitoring Database Schema
+// Production version для Railway з PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 🔄 SYSTEM HEALTH TRACKING
+model SystemHealth {
+  id          String   @id @default(cuid())
+  service     String   // 'api', 'auth', 'database', 'payment', etc.
+  status      String   // 'operational', 'degraded', 'partial', 'major', 'maintenance'
+  responseTime Float?   // Response time in milliseconds
+  uptime      Float?    // Uptime percentage
+  lastCheck   DateTime @default(now())
+  metadata    Json?     // Additional health data
+  createdAt   DateTime @default(now())
+  
+  @@index([service, lastCheck])
+  @@index([status, lastCheck])
+  @@map("system_health")
+}
+
+// 🤖 ASSISTANT PERFORMANCE TRACKING
+model AssistantMetrics {
+  id              String   @id @default(cuid())
+  assistantType   String   // 'elite', 'standard', 'fallback'
+  assistantId     String?  // OpenAI Assistant ID
+  status          String   // 'online', 'offline', 'degraded', 'error'
+  averageTime     Float?   // Average response time in seconds
+  successRate     Float?   // Success rate percentage (0-100)
+  totalRequests   Int      @default(0)
+  successfulReqs  Int      @default(0)
+  failedRequests  Int      @default(0)
+  tokensUsed      Int      @default(0)
+  lastResponse    DateTime?
+  errorMessage    String?
+  createdAt       DateTime @default(now())
+  
+  @@index([assistantType, createdAt])
+  @@index([status, createdAt])
+  @@map("assistant_metrics")
+}
+
+// ⚡ GENERATION PERFORMANCE LOGS
+model GenerationLogs {
+  id               String   @id @default(cuid())
+  requestId        String?  // Correlation ID з основним проектом
+  userId           String?  // User ID (if available)
+  generationType   String   // 'standard', 'advanced', 'batch'
+  assistantUsed    String   // Which assistant was used
+  requestSize      Int?     // Request payload size in bytes
+  responseSize     Int?     // Response payload size in bytes
+  processingTime   Float    // Total processing time in milliseconds
+  openaiTime       Float?   // Time spent waiting for OpenAI
+  dbTime           Float?   // Database operation time
+  success          Boolean  @default(true)
+  errorType        String?  // Error category if failed
+  errorMessage     String?  // Detailed error message
+  metadata         Json?    // Additional generation data
+  createdAt        DateTime @default(now())
+  
+  @@index([createdAt])
+  @@index([success, createdAt])
+  @@index([assistantUsed, createdAt])
+  @@index([generationType, createdAt])
+  @@map("generation_logs")
+}
+
+// 📊 REAL-TIME METRICS AGGREGATION
+model MetricsSnapshot {
+  id                    String   @id @default(cuid())
+  timestamp             DateTime @default(now())
+  activeUsers           Int      @default(0)
+  generationsPerMinute  Float    @default(0)
+  averageResponseTime   Float    @default(0)
+  successRate           Float    @default(0)
+  errorRate             Float    @default(0)
+  systemLoad            Float?   // Server load if available
+  databaseConnections   Int?     // Active DB connections
+  queueSize             Int      @default(0)
+  assistantsOnline      Int      @default(0)
+  createdAt             DateTime @default(now())
+  
+  @@index([timestamp])
+  @@map("metrics_snapshot")
+}
+
+// 🚨 INCIDENT & ALERT TRACKING
+model IncidentLogs {
+  id            String   @id @default(cuid())
+  severity      String   // 'info', 'warning', 'error', 'critical'
+  service       String   // Affected service
+  title         String   // Incident title
+  description   String?  // Detailed description
+  status        String   // 'investigating', 'identified', 'monitoring', 'resolved'
+  startTime     DateTime @default(now())
+  endTime       DateTime?
+  duration      Int?     // Duration in minutes
+  affectedUsers Int      @default(0)
+  alertSent     Boolean  @default(false)
+  notificationChannels Json? // Email/Telegram delivery status
+  resolution    String?  // How it was resolved
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([severity, startTime])
+  @@index([status, startTime])
+  @@map("incident_logs")
+}
+
+// 📈 HISTORICAL PERFORMANCE DATA
+model PerformanceTrends {
+  id                String   @id @default(cuid())
+  date              DateTime // Date for aggregation (daily)
+  avgResponseTime   Float    // Average response time for the day
+  totalGenerations  Int      @default(0)
+  successfulGens    Int      @default(0)
+  failedGens        Int      @default(0)
+  totalUsers        Int      @default(0)
+  peakResponseTime  Float?   // Peak response time
+  minResponseTime   Float?   // Minimum response time
+  downtimeMinutes   Int      @default(0)
+  incidentCount     Int      @default(0)
+  assistantUptime   Json?    // Per-assistant uptime data
+  createdAt         DateTime @default(now())
+  
+  @@unique([date])
+  @@index([date])
+  @@map("performance_trends")
+}
+
+// 🌐 EXTERNAL SERVICE STATUS
+model ExternalServices {
+  id            String   @id @default(cuid())
+  serviceName   String   // 'openai', 'supabase', 'railway', 'wayforpay'
+  status        String   // 'operational', 'degraded', 'outage'
+  responseTime  Float?   // Response time to service
+  lastCheck     DateTime @default(now())
+  endpoint      String?  // Which endpoint was checked
+  errorMessage  String?  // Error if service is down
+  createdAt     DateTime @default(now())
+  
+  @@index([serviceName, lastCheck])
+  @@index([status, lastCheck])
+  @@map("external_services")
+}
+
+// ⚙️ ALERT CONFIGURATION
+model AlertRules {
+  id          String   @id @default(cuid())
+  name        String   // Alert rule name
+  metric      String   // Which metric to monitor
+  threshold   Float    // Threshold value
+  operator    String   // 'gt', 'lt', 'eq' (greater than, less than, equal)
+  severity    String   // 'warning', 'error', 'critical'
+  enabled     Boolean  @default(true)
+  channels    Json     // Notification channels (email, telegram)
+  cooldown    Int      @default(5) // Minutes before re-alerting
+  lastTriggered DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([enabled, metric])
+  @@map("alert_rules")
+}
