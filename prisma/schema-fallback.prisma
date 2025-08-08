@@ -1,0 +1,13 @@
+// FALLBACK: SQLite версія schema для локального тестування
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./health.db"
+}
+
+// Решта схеми залишається без змін...
+// (всі моделі як в PostgreSQL версії)
