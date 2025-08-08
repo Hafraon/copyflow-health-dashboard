@@ -35,6 +35,7 @@ export interface AlertRule {
   operator: 'gt' | 'lt' | 'eq'
   severity: 'warning' | 'error' | 'critical'
   enabled: boolean
+  lastTriggered?: Date
 }
 
 // 🔍 HEALTH CHECKS
