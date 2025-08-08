@@ -62,10 +62,10 @@ export async function GET(request: NextRequest) {
     
     // Calculate alert summary
     const totalActiveAlerts = alerts.length;
-    const criticalAlerts = alerts.filter(a => a.severity === 'critical').length;
-    const errorAlerts = alerts.filter(a => a.severity === 'error').length;
-    const warningAlerts = alerts.filter(a => a.severity === 'warning').length;
-    const infoAlerts = alerts.filter(a => a.severity === 'info').length;
+    const criticalAlerts = alerts.filter((a: any) => a.severity === 'critical').length;
+    const errorAlerts = alerts.filter((a: any) => a.severity === 'error').length;
+    const warningAlerts = alerts.filter((a: any) => a.severity === 'warning').length;
+    const infoAlerts = alerts.filter((a: any) => a.severity === 'info').length;
     
     console.log('✅ [VIEW-ALERTS] Alerts fetched successfully');
     console.log(`📊 [VIEW-ALERTS] ${totalActiveAlerts} active alerts found`);
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
         warningAlerts,
         infoAlerts,
         totalRules: alertRules.length,
-        enabledRules: alertRules.filter(r => r.enabled).length
+        enabledRules: alertRules.filter((r: any) => r.enabled).length
       },
       alerts: alerts.map(alert => ({
         id: alert.id,
