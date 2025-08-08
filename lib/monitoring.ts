@@ -242,9 +242,9 @@ export async function updateMetricsSnapshot(): Promise<void> {
     })
     
     const totalRequests = recentLogs.length
-    const successfulRequests = recentLogs.filter(log => log.success).length
+    const successfulRequests = recentLogs.filter((log: any) => log.success).length
     const averageResponseTime = totalRequests > 0 ? 
-      recentLogs.reduce((sum, log) => sum + log.processingTime, 0) / totalRequests : 0
+      recentLogs.reduce((sum: number, log: any) => sum + log.processingTime, 0) / totalRequests : 0
     
     // Збереження snapshot
     await prisma.metricsSnapshot.create({
