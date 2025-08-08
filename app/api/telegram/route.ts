@@ -1,1 +1,140 @@
-import { NextResponse } from 'next/server'\nimport { telegramAlerts, sendTelegramAlert } from '@/lib/telegram-alerts'\n\n// Force dynamic for Prisma\nexport const dynamic = 'force-dynamic'\n\nexport async function POST(request: Request) {\n  try {\n    const { action, ...params } = await request.json()\n    \n    switch (action) {\n      case 'test':\n        return await handleTestMessage()\n        \n      case 'send-alert':\n        return await handleSendAlert(params)\n        \n      case 'status':\n        return await handleGetStatus()\n        \n      default:\n        return NextResponse.json(\n          { success: false, error: 'Invalid action' },\n          { status: 400 }\n        )\n    }\n    \n  } catch (error) {\n    console.error('Telegram API error:', error)\n    return NextResponse.json(\n      { \n        success: false, \n        error: 'Internal server error',\n        details: error instanceof Error ? error.message : 'Unknown error'\n      },\n      { status: 500 }\n    )\n  }\n}\n\nasync function handleTestMessage() {\n  const startTime = Date.now()\n  \n  try {\n    const success = await telegramAlerts.sendTestMessage()\n    const processingTime = `${Date.now() - startTime}ms`\n    \n    if (success) {\n      return NextResponse.json({\n        success: true,\n        message: 'Test message sent successfully',\n        processingTime,\n        timestamp: new Date().toISOString()\n      })\n    } else {\n      return NextResponse.json({\n        success: false,\n        error: 'Failed to send test message',\n        processingTime,\n        status: telegramAlerts.getStatus()\n      })\n    }\n  } catch (error) {\n    return NextResponse.json({\n      success: false,\n      error: 'Test message failed',\n      details: error instanceof Error ? error.message : 'Unknown error',\n      processingTime: `${Date.now() - startTime}ms`,\n      status: telegramAlerts.getStatus()\n    })\n  }\n}\n\nasync function handleSendAlert(params: any) {\n  const { title, description, severity = 'warning', service = 'manual' } = params\n  \n  if (!title || !description) {\n    return NextResponse.json(\n      { success: false, error: 'Title and description are required' },\n      { status: 400 }\n    )\n  }\n  \n  const startTime = Date.now()\n  \n  try {\n    const success = await sendTelegramAlert(title, description, severity, service, {\n      manual: true,\n      timestamp: new Date().toISOString()\n    })\n    \n    const processingTime = `${Date.now() - startTime}ms`\n    \n    return NextResponse.json({\n      success,\n      message: success ? 'Alert sent successfully' : 'Failed to send alert',\n      processingTime,\n      params: { title, description, severity, service }\n    })\n    \n  } catch (error) {\n    return NextResponse.json({\n      success: false,\n      error: 'Alert sending failed',\n      details: error instanceof Error ? error.message : 'Unknown error',\n      processingTime: `${Date.now() - startTime}ms`\n    })\n  }\n}\n\nasync function handleGetStatus() {\n  try {\n    const status = telegramAlerts.getStatus()\n    const isConfigured = telegramAlerts.isConfigured()\n    \n    return NextResponse.json({\n      success: true,\n      configured: isConfigured,\n      status,\n      environment: {\n        hasBotToken: !!process.env.TELEGRAM_BOT_TOKEN,\n        hasChatId: !!process.env.TELEGRAM_CHAT_ID,\n        botTokenLength: process.env.TELEGRAM_BOT_TOKEN?.length || 0,\n        chatIdLength: process.env.TELEGRAM_CHAT_ID?.length || 0\n      }\n    })\n    \n  } catch (error) {\n    return NextResponse.json({\n      success: false,\n      error: 'Failed to get status',\n      details: error instanceof Error ? error.message : 'Unknown error'\n    })\n  }\n}\n\n// GET для отримання статусу\nexport async function GET() {\n  return await handleGetStatus()\n}\n
+import { NextResponse } from 'next/server'
+import { telegramAlerts, sendTelegramAlert } from '@/lib/telegram-alerts'
+
+// Force dynamic for Prisma
+export const dynamic = 'force-dynamic'
+
+export async function POST(request: Request) {
+  try {
+    const { action, ...params } = await request.json()
+    
+    switch (action) {
+      case 'test':
+        return await handleTestMessage()
+        
+      case 'send-alert':
+        return await handleSendAlert(params)
+        
+      case 'status':
+        return await handleGetStatus()
+        
+      default:
+        return NextResponse.json(
+          { success: false, error: 'Invalid action' },
+          { status: 400 }
+        )
+    }
+    
+  } catch (error) {
+    console.error('Telegram API error:', error)
+    return NextResponse.json(
+      { 
+        success: false, 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
+  }
+}
+
+async function handleTestMessage() {
+  const startTime = Date.now()
+  
+  try {
+    const success = await telegramAlerts.sendTestMessage()
+    const processingTime = `${Date.now() - startTime}ms`
+    
+    if (success) {
+      return NextResponse.json({
+        success: true,
+        message: 'Test message sent successfully',
+        processingTime,
+        timestamp: new Date().toISOString()
+      })
+    } else {
+      return NextResponse.json({
+        success: false,
+        error: 'Failed to send test message',
+        processingTime,
+        status: telegramAlerts.getStatus()
+      })
+    }
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: 'Test message failed',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      processingTime: `${Date.now() - startTime}ms`,
+      status: telegramAlerts.getStatus()
+    })
+  }
+}
+
+async function handleSendAlert(params: any) {
+  const { title, description, severity = 'warning', service = 'manual' } = params
+  
+  if (!title || !description) {
+    return NextResponse.json(
+      { success: false, error: 'Title and description are required' },
+      { status: 400 }
+    )
+  }
+  
+  const startTime = Date.now()
+  
+  try {
+    const success = await sendTelegramAlert(title, description, severity, service, {
+      manual: true,
+      timestamp: new Date().toISOString()
+    })
+    
+    const processingTime = `${Date.now() - startTime}ms`
+    
+    return NextResponse.json({
+      success,
+      message: success ? 'Alert sent successfully' : 'Failed to send alert',
+      processingTime,
+      params: { title, description, severity, service }
+    })
+    
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: 'Alert sending failed',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      processingTime: `${Date.now() - startTime}ms`
+    })
+  }
+}
+
+async function handleGetStatus() {
+  try {
+    const status = telegramAlerts.getStatus()
+    const isConfigured = telegramAlerts.isConfigured()
+    
+    return NextResponse.json({
+      success: true,
+      configured: isConfigured,
+      status,
+      environment: {
+        hasBotToken: !!process.env.TELEGRAM_BOT_TOKEN,
+        hasChatId: !!process.env.TELEGRAM_CHAT_ID,
+        botTokenLength: process.env.TELEGRAM_BOT_TOKEN?.length || 0,
+        chatIdLength: process.env.TELEGRAM_CHAT_ID?.length || 0
+      }
+    })
+    
+  } catch (error) {
+    return NextResponse.json({
+      success: false,
+      error: 'Failed to get status',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+}
+
+// GET для отримання статусу
+export async function GET() {
+  return await handleGetStatus()
+}
