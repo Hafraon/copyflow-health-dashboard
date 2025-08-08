@@ -24,24 +24,27 @@ function SystemDetailCard({ icon, title, status, details, lastUpdate }: SystemDe
     degraded: 'Degraded'
   }
 
-  const iconMap = {
-    'Server': <Server className=\"w-5 h-5\" />,
-    'Database': <Database className=\"w-5 h-5\" />,
-    'Zap': <Zap className=\"w-5 h-5\" />,
-    'Globe': <Globe className=\"w-5 h-5\" />,
-    'Shield': <Shield className=\"w-5 h-5\" />,
-    'CreditCard': <CreditCard className=\"w-5 h-5\" />
+  const getIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'Server': return <Server className="w-5 h-5" />
+      case 'Database': return <Database className="w-5 h-5" />
+      case 'Zap': return <Zap className="w-5 h-5" />
+      case 'Globe': return <Globe className="w-5 h-5" />
+      case 'Shield': return <Shield className="w-5 h-5" />
+      case 'CreditCard': return <CreditCard className="w-5 h-5" />
+      default: return <Server className="w-5 h-5" />
+    }
   }
 
   return (
     <div className={`bg-white rounded-lg border-l-4 border shadow-sm p-6 ${statusColors[status]}`}>
-      <div className=\"flex items-center justify-between mb-4\">
-        <div className=\"flex items-center space-x-3\">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center space-x-3">
           <div className={`p-2 rounded-lg ${status === 'online' ? 'bg-green-100' : status === 'degraded' ? 'bg-yellow-100' : 'bg-red-100'}`}>
-            {typeof icon === 'string' ? iconMap[icon as keyof typeof iconMap] : icon}
+            {typeof icon === 'string' ? getIcon(icon) : icon}
           </div>
           <div>
-            <h3 className=\"font-semibold text-gray-900\">{title}</h3>
+            <h3 className="font-semibold text-gray-900">{title}</h3>
             <span className={`text-sm font-medium ${
               status === 'online' ? 'text-green-600' :
               status === 'degraded' ? 'text-yellow-600' : 'text-red-600'
@@ -50,13 +53,13 @@ function SystemDetailCard({ icon, title, status, details, lastUpdate }: SystemDe
             </span>
           </div>
         </div>
-        <div className=\"text-xs text-gray-500\">{lastUpdate}</div>
+        <div className="text-xs text-gray-500">{lastUpdate}</div>
       </div>
       
-      <div className=\"space-y-3\">
+      <div className="space-y-3">
         {details.map((detail, index) => (
-          <div key={index} className=\"flex justify-between items-center\">
-            <span className=\"text-sm text-gray-600\">{detail.label}</span>
+          <div key={index} className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">{detail.label}</span>
             <span className={`text-sm font-medium ${
               detail.status === 'good' ? 'text-green-600' :
               detail.status === 'warning' ? 'text-yellow-600' :
@@ -157,10 +160,10 @@ export default function SystemDetails() {
 
   if (loading && !systemData) {
     return (
-      <div className=\"flex items-center justify-center py-12\">
-        <div className=\"flex items-center space-x-3\">
-          <RefreshCw className=\"w-5 h-5 animate-spin text-blue-600\" />
-          <span className=\"text-gray-600\">Loading system data...</span>
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center space-x-3">
+          <RefreshCw className="w-5 h-5 animate-spin text-blue-600" />
+          <span className="text-gray-600">Loading system data...</span>
         </div>
       </div>
     )
@@ -168,28 +171,28 @@ export default function SystemDetails() {
 
   return (
     <div>
-      <div className=\"mb-6\">
-        <div className=\"flex items-center justify-between\">
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
           <div>
-            <h3 className=\"text-lg font-semibold text-gray-900\">System Components</h3>
-            <p className=\"text-sm text-gray-600\">
+            <h3 className="text-lg font-semibold text-gray-900">System Components</h3>
+            <p className="text-sm text-gray-600">
               Real-time status of all system components and dependencies
               {error && (
-                <span className=\"text-red-600 ml-2\">
-                  <AlertCircle className=\"w-4 h-4 inline mr-1\" />
+                <span className="text-red-600 ml-2">
+                  <AlertCircle className="w-4 h-4 inline mr-1" />
                   API Error - Showing fallback data
                 </span>
               )}
             </p>
           </div>
-          <div className=\"flex items-center space-x-3\">
-            <span className=\"text-xs text-gray-500\">
+          <div className="flex items-center space-x-3">
+            <span className="text-xs text-gray-500">
               Last updated: {formatLastRefresh(lastRefresh)}
             </span>
             <button
               onClick={handleManualRefresh}
               disabled={loading}
-              className=\"flex items-center space-x-1 px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50\"
+              className="flex items-center space-x-1 px-3 py-1 text-xs bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
@@ -200,51 +203,51 @@ export default function SystemDetails() {
       
       {systemData && (
         <>
-          <div className=\"grid grid-cols-1 lg:grid-cols-2 gap-6\">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {systemData.systemComponents.map((component: any, index: number) => (
               <SystemDetailCard key={index} {...component} />
             ))}
           </div>
           
           {/* System Summary */}
-          <div className=\"mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200\">
-            <h4 className=\"font-semibold text-gray-900 mb-4\">System Health Summary</h4>
-            <div className=\"grid grid-cols-1 md:grid-cols-4 gap-4\">
-              <div className=\"text-center\">
-                <div className=\"text-2xl font-bold text-green-600\">
+          <div className="mt-8 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200">
+            <h4 className="font-semibold text-gray-900 mb-4">System Health Summary</h4>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
                   {systemData.summary.onlineComponents}/{systemData.summary.totalComponents}
                 </div>
-                <div className=\"text-sm text-gray-600\">Components Online</div>
+                <div className="text-sm text-gray-600">Components Online</div>
               </div>
-              <div className=\"text-center\">
-                <div className=\"text-2xl font-bold text-yellow-600\">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-600">
                   {systemData.summary.degradedComponents}/{systemData.summary.totalComponents}
                 </div>
-                <div className=\"text-sm text-gray-600\">Degraded Services</div>
+                <div className="text-sm text-gray-600">Degraded Services</div>
               </div>
-              <div className=\"text-center\">
-                <div className=\"text-2xl font-bold text-blue-600\">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
                   {systemData.summary.overallUptime}%
                 </div>
-                <div className=\"text-sm text-gray-600\">Overall Uptime</div>
+                <div className="text-sm text-gray-600">Overall Uptime</div>
               </div>
-              <div className=\"text-center\">
-                <div className=\"text-2xl font-bold text-purple-600\">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600">
                   {systemData.summary.avgResponseTime}
                 </div>
-                <div className=\"text-sm text-gray-600\">Avg Response</div>
+                <div className="text-sm text-gray-600">Avg Response</div>
               </div>
             </div>
           </div>
           
           {error && (
-            <div className=\"mt-6 bg-red-50 border border-red-200 rounded-lg p-4\">
-              <div className=\"flex items-center space-x-2\">
-                <AlertCircle className=\"w-5 h-5 text-red-600\" />
+            <div className="mt-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
                 <div>
-                  <h4 className=\"font-medium text-red-900\">API Connection Issue</h4>
-                  <p className=\"text-sm text-red-700 mt-1\">{error}</p>
-                  <p className=\"text-xs text-red-600 mt-2\">
+                  <h4 className="font-medium text-red-900">API Connection Issue</h4>
+                  <p className="text-sm text-red-700 mt-1">{error}</p>
+                  <p className="text-xs text-red-600 mt-2">
                     Displaying cached/fallback data. Click refresh to retry.
                   </p>
                 </div>
