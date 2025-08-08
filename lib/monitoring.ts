@@ -578,9 +578,14 @@ export async function getRealDatabaseMetrics(): Promise<any> {
           pg_database_size(current_database()) as size_bytes,
           (SELECT count(*) FROM pg_stat_activity WHERE state = 'active') as active_connections,
           (SELECT setting::int FROM pg_settings WHERE name = 'max_connections') as max_connections
-      `
+      ` as Array<{
+        size_bytes: bigint | null
+        active_connections: number | null  
+        max_connections: number | null
+      }>
       
-      const sizeInGB = dbStats[0]?.size_bytes ? (dbStats[0].size_bytes / (1024 * 1024 * 1024)).toFixed(1) : '0.0'
+      const sizeBytes = dbStats[0]?.size_bytes ? Number(dbStats[0].size_bytes) : 0
+      const sizeInGB = sizeBytes > 0 ? (sizeBytes / (1024 * 1024 * 1024)).toFixed(1) : '0.0'
       
       return {
         queryTime,
