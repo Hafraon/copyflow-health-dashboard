@@ -30,6 +30,7 @@ export interface MetricData {
 
 export interface AlertRule {
   id: string
+  name: string
   metric: string
   threshold: number
   operator: 'gt' | 'lt' | 'eq'
