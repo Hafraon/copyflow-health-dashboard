@@ -7,8 +7,14 @@ export const metadata = {
   title: 'CopyFlow Health Dashboard',
   description: 'Real-time system health and performance monitoring for CopyFlow',
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' }
+    ],
+    apple: '/apple-touch-icon.png'
   },
+  themeColor: '#1f2937',
+  viewport: 'width=device-width, initial-scale=1'
 }
 
 export default function RootLayout({
