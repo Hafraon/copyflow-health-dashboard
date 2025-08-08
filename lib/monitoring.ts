@@ -47,7 +47,23 @@ export interface AlertRule {
   operator: 'gt' | 'lt' | 'eq'
   severity: 'warning' | 'error' | 'critical'
   enabled: boolean
-  lastTriggered?: Date
+  lastTriggered?: Date | null
+}
+
+// Prisma AlertRule type (що повертає база даних)
+export interface PrismaAlertRule {
+  id: string
+  name: string
+  metric: string
+  threshold: number
+  operator: string
+  severity: string
+  enabled: boolean
+  channels: any
+  cooldown: number
+  lastTriggered: Date | null
+  createdAt: Date
+  updatedAt: Date
 }
 
 // 🔍 HEALTH CHECKS
@@ -281,7 +297,7 @@ export async function updateMetricsSnapshot(): Promise<void> {
 // 🚨 ALERTING SYSTEM  
 export async function checkAlerts(): Promise<void> {
   try {
-    const alertRules = await prisma.alertRules.findMany({
+    const prismaAlertRules = await prisma.alertRules.findMany({
       where: { enabled: true }
     })
     
@@ -291,7 +307,19 @@ export async function checkAlerts(): Promise<void> {
     
     if (!latestMetrics) return
     
-    for (const rule of alertRules) {
+    for (const prismaRule of prismaAlertRules) {
+      // Конвертуємо Prisma результат в AlertRule
+      const rule: AlertRule = {
+        id: prismaRule.id,
+        name: prismaRule.name,
+        metric: prismaRule.metric,
+        threshold: prismaRule.threshold,
+        operator: prismaRule.operator as 'gt' | 'lt' | 'eq',
+        severity: prismaRule.severity as 'warning' | 'error' | 'critical',
+        enabled: prismaRule.enabled,
+        lastTriggered: prismaRule.lastTriggered
+      }
+      
       const shouldAlert = await evaluateAlertRule(rule, latestMetrics)
       
       if (shouldAlert) {
@@ -325,7 +353,8 @@ async function triggerAlert(rule: AlertRule, metrics: any): Promise<void> {
     // Перевірка cooldown
     if (rule.lastTriggered) {
       const cooldownMs = 5 * 60 * 1000 // 5 minutes
-      if (Date.now() - rule.lastTriggered.getTime() < cooldownMs) {
+      const lastTriggeredTime = new Date(rule.lastTriggered).getTime()
+      if (Date.now() - lastTriggeredTime < cooldownMs) {
         return // Ще в cooldown
       }
     }
@@ -345,7 +374,7 @@ async function triggerAlert(rule: AlertRule, metrics: any): Promise<void> {
     // Відправка сповіщення
     await sendAlert(rule, metrics)
     
-    // Оновлення lastTriggered
+    // Оновлення lastTriggered - використовуємо rule.id
     await prisma.alertRules.update({
       where: { id: rule.id },
       data: { lastTriggered: new Date() }
