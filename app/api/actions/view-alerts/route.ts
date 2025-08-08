@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
         totalRules: alertRules.length,
         enabledRules: alertRules.filter((r: any) => r.enabled).length
       },
-      alerts: alerts.map(alert => ({
+      alerts: alerts.map((alert: any) => ({
         id: alert.id,
         severity: alert.severity,
         service: alert.service,
@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
         createdAt: alert.createdAt,
         updatedAt: alert.updatedAt
       })),
-      alertRules: alertRules.map(rule => ({
+      alertRules: alertRules.map((rule: any) => ({
         id: rule.id,
         name: rule.name,
         metric: rule.metric,
