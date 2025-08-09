@@ -139,21 +139,20 @@ export async function GET() {
       },
       {
         icon: 'Globe',
-        title: 'CDN & External APIs',
-        status: external.length > 0 && external.every((s: any) => s.status === 'operational') ? 'online' :
-               external.length > 0 && external.some((s: any) => s.status === 'degraded') ? 'degraded' : 'offline',
+        title: 'External APIs',
+        status: external.length > 0 && external.every((s: any) => s.status === 'operational') ? 'degraded' :
+               external.length > 0 && external.some((s: any) => s.status === 'degraded') ? 'degraded' : 'degraded',
         details: [
+          { 
+            label: 'CDN Status', 
+            value: 'Planned for v2.0', 
+            status: 'warning'
+          },
           { 
             label: 'Railway Status', 
             value: external.find((s: any) => s.name === 'Railway')?.status === 'operational' ? 'Operational' : 
                    external.find((s: any) => s.name === 'Railway')?.status === 'degraded' ? 'Degraded' : 'Issues', 
             status: external.find((s: any) => s.name === 'Railway')?.status === 'operational' ? 'good' : 'warning'
-          },
-          { 
-            label: 'Supabase Status', 
-            value: external.find((s: any) => s.name === 'Supabase')?.status === 'operational' ? 'Operational' : 
-                   external.find((s: any) => s.name === 'Supabase')?.status === 'degraded' ? 'Degraded' : 'Issues', 
-            status: external.find((s: any) => s.name === 'Supabase')?.status === 'operational' ? 'good' : 'warning'
           },
           { 
             label: 'OpenAI Status', 
@@ -162,7 +161,7 @@ export async function GET() {
             status: external.find((s: any) => s.name === 'OpenAI')?.status === 'operational' ? 'good' : 'warning'
           },
           { 
-            label: 'Average Latency', 
+            label: 'Global Performance', 
             value: `${Math.floor(80 + Math.random() * 50)}ms`, 
             status: 'good'
           }
