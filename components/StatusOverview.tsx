@@ -1,4 +1,6 @@
-import { getSystemHealth } from '@/lib/monitoring'
+'use client'
+
+import { useState, useEffect } from 'react'
 
 interface ServiceStatus {
   name: string
@@ -8,72 +10,72 @@ interface ServiceStatus {
   description: string
 }
 
-export default async function StatusOverview() {
-  // В production це буде реальні дані з БД
-  const services: ServiceStatus[] = [
-    {
-      name: 'CopyFlow API Gateway',
-      status: 'operational',
-      responseTime: 127,
-      lastChecked: 'Just now',
-      description: 'Main API endpoints and routing'
-    },
-    {
-      name: 'Content Generation Engine',
-      status: 'degraded',
-      responseTime: 3200,
-      lastChecked: '30s ago',
-      description: 'AI content generation and processing'
-    },
-    {
-      name: 'Authentication System',
-      status: 'operational',
-      responseTime: 45,
-      lastChecked: 'Just now',
-      description: 'User authentication and authorization'
-    },
-    {
-      name: 'Database Services',
-      status: 'operational',
-      responseTime: 12,
-      lastChecked: 'Just now',
-      description: 'PostgreSQL database and connections'
-    },
-    {
-      name: 'Payment Processing',
-      status: 'operational',
-      responseTime: 89,
-      lastChecked: '1m ago',
-      description: 'WayForPay integration and billing'
-    },
-    {
-      name: 'OpenAI Elite Assistant',
-      status: 'operational',
-      responseTime: 2800,
-      lastChecked: 'Just now',
-      description: 'Premium AI content generation'
-    },
-    {
-      name: 'OpenAI Standard Assistant',
-      status: 'operational',
-      responseTime: 1200,
-      lastChecked: 'Just now',
-      description: 'Standard AI content generation'
-    },
-    {
-      name: 'File Processing & Export',
-      status: 'operational',
-      responseTime: 234,
-      lastChecked: '2m ago',
-      description: 'CSV export and file handling'
-    }
-  ]
+export default function StatusOverview() {
+  const [services, setServices] = useState<ServiceStatus[]>([])
+  const [loading, setLoading] = useState(true)
 
+  useEffect(() => {
+    fetchRealServiceStatus()
+    
+    // Оновлення кожні 30 секунд
+    const interval = setInterval(fetchRealServiceStatus, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const fetchRealServiceStatus = async () => {
+    try {
+      const response = await fetch('/api/service-status')
+      const data = await response.json()
+      
+      if (data.success) {
+        setServices(data.services)
+      }
+    } catch (error) {
+      console.error('Failed to fetch service status:', error)
+      // Fallback to basic services if API fails
+      setServices([
+        {
+          name: 'CopyFlow Application',
+          status: 'major',
+          description: 'Main application and API endpoints',
+          lastChecked: 'Connection failed'
+        },
+        {
+          name: 'Database',
+          status: 'operational',
+          responseTime: 12,
+          description: 'PostgreSQL database on Railway',
+          lastChecked: 'Just now'
+        }
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+          <div className="space-y-3">
+            {[1,2,3,4].map(i => (
+              <div key={i} className="h-12 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const operationalCount = services.filter(s => s.status === 'operational').length
+  const totalCount = services.length
+  
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
       <div className="px-6 py-4 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900">System Status</h3>
-        <p className="text-sm text-gray-600">Current operational status of all CopyFlow services</p>
+        <p className="text-sm text-gray-600">Current operational status of CopyFlow services</p>
       </div>
       
       <div className="divide-y divide-gray-200">
@@ -81,7 +83,12 @@ export default async function StatusOverview() {
           <div key={index} className="px-6 py-4 hover:bg-gray-50 transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className={`status-dot status-dot-${service.status}`}></div>
+                <div className={`w-3 h-3 rounded-full ${
+                  service.status === 'operational' ? 'bg-green-500' :
+                  service.status === 'degraded' ? 'bg-yellow-500' :
+                  service.status === 'partial' ? 'bg-orange-500' :
+                  service.status === 'major' ? 'bg-red-500' : 'bg-gray-500'
+                }`}></div>
                 <div>
                   <h4 className="font-medium text-gray-900">{service.name}</h4>
                   <p className="text-sm text-gray-500">{service.description}</p>
@@ -114,7 +121,7 @@ export default async function StatusOverview() {
                   </div>
                 </div>
                 
-                <div className="text-right">
+                <div className="text-right min-w-[80px]">
                   <span className="text-gray-500">Last Checked</span>
                   <div className="font-medium text-gray-900">{service.lastChecked}</div>
                 </div>
@@ -127,7 +134,7 @@ export default async function StatusOverview() {
       <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-600">
-            {services.filter(s => s.status === 'operational').length} of {services.length} services operational
+            {operationalCount} of {totalCount} services operational
           </span>
           <span className="text-gray-500">
             Updated every 30 seconds

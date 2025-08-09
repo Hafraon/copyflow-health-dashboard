@@ -1,167 +1,189 @@
 'use client'
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts'
+import { useState, useEffect } from 'react'
+import { TrendingUp, TrendingDown, Clock, Database, Zap, Activity } from 'lucide-react'
+
+interface PerformanceMetric {
+  title: string
+  current: string
+  trend: 'up' | 'down' | 'stable'
+  change: string
+  status: 'good' | 'warning' | 'critical'
+  icon: React.ReactNode
+  description: string
+}
 
 export default function PerformanceCharts() {
-  // Mock data для демонстрації - в production це буде з БД
-  const responseTimeData = [
-    { time: '00:00', elite: 2.1, standard: 1.2, average: 1.8 },
-    { time: '04:00', elite: 2.3, standard: 1.1, average: 1.9 },
-    { time: '08:00', elite: 3.2, standard: 1.8, average: 2.8 },
-    { time: '12:00', elite: 4.1, standard: 2.1, average: 3.4 },
-    { time: '16:00', elite: 3.8, standard: 1.9, average: 3.1 },
-    { time: '20:00', elite: 2.9, standard: 1.4, average: 2.3 },
-    { time: 'Now', elite: 2.8, standard: 1.2, average: 2.0 },
-  ]
+  const [metrics, setMetrics] = useState<PerformanceMetric[]>([])
+  const [loading, setLoading] = useState(true)
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
 
-  const successRateData = [
-    { time: '00:00', success: 99.2, errors: 0.8 },
-    { time: '04:00', success: 99.5, errors: 0.5 },
-    { time: '08:00', success: 98.1, errors: 1.9 },
-    { time: '12:00', success: 97.8, errors: 2.2 },
-    { time: '16:00', success: 98.9, errors: 1.1 },
-    { time: '20:00', success: 99.1, errors: 0.9 },
-    { time: 'Now', success: 98.5, errors: 1.5 },
-  ]
+  useEffect(() => {
+    fetchPerformanceMetrics()
+    
+    // Update every minute
+    const interval = setInterval(fetchPerformanceMetrics, 60000)
+    return () => clearInterval(interval)
+  }, [])
+
+  const fetchPerformanceMetrics = async () => {
+    try {
+      setLoading(true)
+      
+      const [systemResponse, serviceResponse] = await Promise.allSettled([
+        fetch('/api/system-details'),
+        fetch('/api/service-status')
+      ])
+      
+      let systemData = null
+      let serviceData = null
+      
+      if (systemResponse.status === 'fulfilled' && systemResponse.value.ok) {
+        const data = await systemResponse.value.json()
+        systemData = data.data
+      }
+      
+      if (serviceResponse.status === 'fulfilled' && serviceResponse.value.ok) {
+        const data = await serviceResponse.value.json()
+        serviceData = data
+      }
+      
+      const calculatedMetrics = calculateMetrics(systemData, serviceData)
+      setMetrics(calculatedMetrics)
+      setLastUpdate(new Date())
+      
+    } catch (error) {
+      console.error('Failed to fetch performance metrics:', error)
+      // Set fallback metrics
+      setMetrics([
+        {
+          title: 'System Status',
+          current: 'Unknown',
+          trend: 'stable',
+          change: 'No data',
+          status: 'warning',
+          icon: <Activity className=\"w-6 h-6 text-gray-600\" />,
+          description: 'Unable to fetch system metrics'
+        }
+      ])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const calculateMetrics = (systemData: any, serviceData: any): PerformanceMetric[] => {
+    const metrics: PerformanceMetric[] = []
+    
+    // Database performance
+    const dbComponent = systemData?.systemComponents?.find((c: any) => c.title === 'Database Cluster')
+    if (dbComponent) {
+      const queryTime = dbComponent.details?.find((d: any) => d.label === 'Query Time')?.value
+      const queryTimeMs = queryTime ? parseInt(queryTime.replace('ms', '')) : 0
+      
+      metrics.push({
+        title: 'Database Performance',
+        current: queryTime || 'N/A',
+        trend: queryTimeMs > 50 ? 'up' : queryTimeMs > 20 ? 'stable' : 'down',
+        change: queryTimeMs > 50 ? 'Slower' : queryTimeMs > 20 ? 'Normal' : 'Faster',
+        status: queryTimeMs > 100 ? 'critical' : queryTimeMs > 50 ? 'warning' : 'good',
+        icon: <Database className=\"w-6 h-6 text-blue-600\" />,
+        description: 'PostgreSQL query response time'
+      })
+    }
+    
+    // OpenAI performance
+    const openaiComponent = systemData?.systemComponents?.find((c: any) => c.title === 'OpenAI Services')
+    if (openaiComponent) {
+      const latency = openaiComponent.details?.find((d: any) => d.label === 'Average Latency')?.value
+      const latencyMs = latency ? parseInt(latency.replace('ms', '')) : 0
+      
+      metrics.push({
+        title: 'AI Response Time',
+        current: latency || 'N/A',
+        trend: latencyMs > 2000 ? 'up' : latencyMs > 1000 ? 'stable' : 'down',
+        change: latencyMs > 2000 ? 'Degraded' : latencyMs > 1000 ? 'Normal' : 'Fast',
+        status: latencyMs > 3000 ? 'critical' : latencyMs > 2000 ? 'warning' : 'good',
+        icon: <Zap className=\"w-6 h-6 text-purple-600\" />,
+        description: 'OpenAI Assistants response time'
+      })
+    }
+    
+    // Service availability
+    if (serviceData?.summary) {
+      const { total, operational } = serviceData.summary
+      const availability = total > 0 ? (operational / total * 100) : 0
+      
+      metrics.push({
+        title: 'Service Availability',
+        current: `${availability.toFixed(1)}%`,
+        trend: availability === 100 ? 'stable' : availability > 80 ? 'down' : 'up',
+        change: availability === 100 ? 'All Online' : `${operational}/${total} Services`,
+        status: availability === 100 ? 'good' : availability > 80 ? 'warning' : 'critical',
+        icon: <Activity className=\"w-6 h-6 text-green-600\" />,
+        description: 'Percentage of services operational'
+      })
+    }
+    
+    // Overall health score
+    if (systemData?.summary?.overallUptime) {
+      const uptime = parseFloat(systemData.summary.overallUptime)
+      
+      metrics.push({
+        title: 'System Health',
+        current: `${uptime}%`,
+        trend: uptime > 95 ? 'stable' : uptime > 90 ? 'down' : 'up',
+        change: uptime > 95 ? 'Excellent' : uptime > 90 ? 'Good' : 'Needs Attention',
+        status: uptime > 95 ? 'good' : uptime > 90 ? 'warning' : 'critical',
+        icon: <TrendingUp className=\"w-6 h-6 text-indigo-600\" />,
+        description: 'Overall system health score'
+      })
+    }
+    
+    return metrics
+  }
+
+  const formatLastUpdate = (date: Date) => {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffSec = Math.floor(diffMs / 1000)
+    const diffMin = Math.floor(diffSec / 60)
+    
+    if (diffSec < 60) return `${diffSec}s ago`
+    if (diffMin < 60) return `${diffMin}m ago`
+    return date.toLocaleTimeString()
+  }
+
+  if (loading && metrics.length === 0) {
+    return (
+      <div className=\"space-y-6\">
+        <div className=\"bg-white rounded-lg border border-gray-200 p-6\">
+          <div className=\"animate-pulse\">
+            <div className=\"h-4 bg-gray-200 rounded w-1/3 mb-4\"></div>
+            <div className=\"grid grid-cols-1 md:grid-cols-2 gap-4\">
+              {[1,2,3,4].map(i => (
+                <div key={i} className=\"h-24 bg-gray-200 rounded\"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Response Time Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Response Time Trends</h3>
-          <p className="text-sm text-gray-600">Average response times over the last 24 hours</p>
+    <div className=\"space-y-6\">
+      {/* Performance Overview */}
+      <div className=\"bg-white rounded-lg border border-gray-200 p-6\">
+        <div className=\"flex items-center justify-between mb-6\">
+          <div>
+            <h3 className=\"text-lg font-semibold text-gray-900\">Performance Overview</h3>
+            <p className=\"text-sm text-gray-600\">Real-time system performance metrics</p>
+          </div>
+          <div className=\"text-xs text-gray-500\">
+            Last updated: {formatLastUpdate(lastUpdate)}
+          </div>
         </div>
         
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={responseTimeData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis 
-                dataKey="time" 
-                stroke="#6b7280"
-                fontSize={12}
-              />
-              <YAxis 
-                stroke="#6b7280"
-                fontSize={12}
-                label={{ value: 'Seconds', angle: -90, position: 'insideLeft' }}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                }}
-                formatter={(value: number, name: string) => [
-                  `${value}s`,
-                  name === 'elite' ? 'Elite Assistant' :
-                  name === 'standard' ? 'Standard Assistant' : 'Average'
-                ]}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="elite" 
-                stroke="#ef4444" 
-                strokeWidth={2}
-                dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                name="elite"
-              />
-              <Line 
-                type="monotone" 
-                dataKey="standard" 
-                stroke="#10b981" 
-                strokeWidth={2}
-                dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                name="standard"
-              />
-              <Line 
-                type="monotone" 
-                dataKey="average" 
-                stroke="#6366f1" 
-                strokeWidth={3}
-                dot={{ fill: '#6366f1', strokeWidth: 2, r: 5 }}
-                name="average"
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        
-        <div className="mt-4 flex items-center justify-center space-x-6 text-sm">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-            <span className="text-gray-600">Elite Assistant</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-            <span className="text-gray-600">Standard Assistant</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
-            <span className="text-gray-600">System Average</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Success Rate Chart */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Success Rate & Errors</h3>
-          <p className="text-sm text-gray-600">Request success rate and error percentage</p>
-        </div>
-        
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={successRateData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis 
-                dataKey="time" 
-                stroke="#6b7280"
-                fontSize={12}
-              />
-              <YAxis 
-                stroke="#6b7280"
-                fontSize={12}
-                domain={[95, 100]}
-                label={{ value: 'Percentage', angle: -90, position: 'insideLeft' }}
-              />
-              <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'white',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                }}
-                formatter={(value: number, name: string) => [
-                  `${value}%`,
-                  name === 'success' ? 'Success Rate' : 'Error Rate'
-                ]}
-              />
-              <Area
-                type="monotone"
-                dataKey="success"
-                stackId="1"
-                stroke="#10b981"
-                fill="#10b981"
-                fillOpacity={0.6}
-                name="success"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-            <div className="text-2xl font-bold text-green-600">98.5%</div>
-            <div className="text-sm text-green-700">Success Rate</div>
-          </div>
-          <div className="text-center p-3 bg-red-50 rounded-lg border border-red-200">
-            <div className="text-2xl font-bold text-red-600">1.5%</div>
-            <div className="text-sm text-red-700">Error Rate</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+        <div className=\"grid grid-cols-1 md:grid-cols-2 gap-6\">
+          {metrics.map((metric, index) => (
+            <div key={index} className={`p-6 rounded-lg border-2 ${\n              metric.status === 'good' ? 'border-green-200 bg-green-50' :\n              metric.status === 'warning' ? 'border-yellow-200 bg-yellow-50' :\n              'border-red-200 bg-red-50'\n            }`}>\n              <div className=\"flex items-center justify-between mb-4\">\n                <div className=\"flex items-center space-x-3\">\n                  <div className={`p-2 rounded-lg ${\n                    metric.status === 'good' ? 'bg-green-100' :\n                    metric.status === 'warning' ? 'bg-yellow-100' : 'bg-red-100'\n                  }`}>\n                    {metric.icon}\n                  </div>\n                  <div>\n                    <h4 className=\"font-medium text-gray-900\">{metric.title}</h4>\n                    <p className=\"text-xs text-gray-500\">{metric.description}</p>\n                  </div>\n                </div>\n                \n                <div className=\"flex items-center space-x-1\">\n                  {metric.trend === 'up' ? (\n                    <TrendingUp className=\"w-4 h-4 text-red-500\" />\n                  ) : metric.trend === 'down' ? (\n                    <TrendingDown className=\"w-4 h-4 text-green-500\" />\n                  ) : (\n                    <Clock className=\"w-4 h-4 text-gray-500\" />\n                  )}\n                </div>\n              </div>\n              \n              <div className=\"flex items-center justify-between\">\n                <div>\n                  <div className=\"text-2xl font-bold text-gray-900\">{metric.current}</div>\n                  <div className=\"text-sm text-gray-600\">{metric.change}</div>\n                </div>\n                \n                <div className={`px-2 py-1 rounded text-xs font-medium ${\n                  metric.status === 'good' ? 'bg-green-100 text-green-700' :\n                  metric.status === 'warning' ? 'bg-yellow-100 text-yellow-700' :\n                  'bg-red-100 text-red-700'\n                }`}>\n                  {metric.status.toUpperCase()}\n                </div>\n              </div>\n            </div>\n          ))}\n        </div>\n        \n        {metrics.length === 0 && (\n          <div className=\"text-center py-8\">\n            <Activity className=\"w-12 h-12 text-gray-400 mx-auto mb-4\" />\n            <h4 className=\"text-lg font-medium text-gray-900 mb-2\">No Performance Data</h4>\n            <p className=\"text-gray-600\">Performance metrics will appear here when data is available.</p>\n          </div>\n        )}\n      </div>\n      \n      {/* Performance Summary */}\n      <div className=\"bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6 border border-blue-200\">\n        <h4 className=\"font-semibold text-gray-900 mb-4\">Performance Summary</h4>\n        <div className=\"grid grid-cols-1 md:grid-cols-3 gap-4\">\n          <div className=\"text-center\">\n            <div className=\"text-2xl font-bold text-green-600\">\n              {metrics.filter(m => m.status === 'good').length}\n            </div>\n            <div className=\"text-sm text-gray-600\">Metrics in Good State</div>\n          </div>\n          <div className=\"text-center\">\n            <div className=\"text-2xl font-bold text-yellow-600\">\n              {metrics.filter(m => m.status === 'warning').length}\n            </div>\n            <div className=\"text-sm text-gray-600\">Metrics with Warnings</div>\n          </div>\n          <div className=\"text-center\">\n            <div className=\"text-2xl font-bold text-red-600\">\n              {metrics.filter(m => m.status === 'critical').length}\n            </div>\n            <div className=\"text-sm text-gray-600\">Critical Metrics</div>\n          </div>\n        </div>\n      </div>\n    </div>\n  )\n}
