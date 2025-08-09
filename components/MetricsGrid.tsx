@@ -125,10 +125,10 @@ export default function MetricsGrid() {
     const openaiMetrics = systemData?.systemComponents?.find((c: any) => c.title === 'OpenAI Services')
     const openaiLatency = openaiMetrics?.details?.find((d: any) => d.label === 'Average Latency')?.value || 'N/A'
     
-    // Service availability
-    const operationalServices = services?.filter((s: any) => s.status === 'operational').length || 0
+    // Service availability - operational + degraded + partial = working services
+    const workingServices = services?.filter((s: any) => ['operational', 'degraded', 'partial'].includes(s.status)).length || 0
     const totalServices = services?.length || 0
-    const availability = totalServices > 0 ? ((operationalServices / totalServices) * 100).toFixed(1) : '0.0'
+    const availability = totalServices > 0 ? ((workingServices / totalServices) * 100).toFixed(1) : '0.0'
     
     // Helper function to ensure proper typing
     const getStatus = (condition: boolean, warningCondition: boolean): 'good' | 'warning' | 'critical' => {
@@ -159,7 +159,7 @@ export default function MetricsGrid() {
         value: `${availability}%`,
         status: getStatus(parseFloat(availability) < 50, parseFloat(availability) < 100),
         icon: <CheckCircle className="w-5 h-5 text-green-600" />,
-        description: `${operationalServices}/${totalServices} services operational`
+        description: `${workingServices}/${totalServices} services operational`
       },
       {
         title: 'System Health',

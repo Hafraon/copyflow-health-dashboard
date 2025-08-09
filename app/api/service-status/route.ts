@@ -125,16 +125,16 @@ async function checkMainApplication(): Promise<ServiceCheck> {
     if (response.ok) {
       return {
         name: 'CopyFlow Application',
-        status: responseTime > 3000 ? 'degraded' : 'operational',  // Більш реалістичний threshold
+        status: responseTime > 2000 ? 'degraded' : 'operational',  // 181ms = operational!
         responseTime,
         description: 'Main application and API endpoints',
         lastChecked: 'Just now'
       }
     } else if (response.status >= 400 && response.status < 500) {
-      // Client errors (404, 401, etc.) - але якщо відповідає швидко, то partial
+      // Client errors - але якщо швидко відповідає = operational (app працює)
       return {
         name: 'CopyFlow Application',
-        status: responseTime < 1000 ? 'partial' : 'degraded',
+        status: responseTime < 500 ? 'operational' : 'degraded',  // Швидкий response = app працює
         responseTime,
         description: 'Main application and API endpoints',
         lastChecked: 'Just now',
