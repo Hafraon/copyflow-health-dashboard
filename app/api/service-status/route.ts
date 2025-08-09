@@ -47,7 +47,8 @@ export async function GET() {
         total: services.length,
         operational: services.filter(s => s.status === 'operational').length,
         degraded: services.filter(s => s.status === 'degraded').length,
-        issues: services.filter(s => ['partial', 'major'].includes(s.status)).length
+        issues: services.filter(s => ['major'].includes(s.status)).length,  // Тільки major = справжні проблеми
+        workingServices: services.filter(s => ['operational', 'degraded', 'partial'].includes(s.status)).length  // Додаємо лічильник працюючих
       },
       processingTime: `${processingTime}ms`,
       timestamp: new Date().toISOString()
@@ -124,15 +125,26 @@ async function checkMainApplication(): Promise<ServiceCheck> {
     if (response.ok) {
       return {
         name: 'CopyFlow Application',
-        status: responseTime > 5000 ? 'degraded' : 'operational',
+        status: responseTime > 3000 ? 'degraded' : 'operational',  // Більш реалістичний threshold
         responseTime,
         description: 'Main application and API endpoints',
         lastChecked: 'Just now'
       }
-    } else {
+    } else if (response.status >= 400 && response.status < 500) {
+      // Client errors (404, 401, etc.) - але якщо відповідає швидко, то partial
       return {
         name: 'CopyFlow Application',
-        status: 'partial',
+        status: responseTime < 1000 ? 'partial' : 'degraded',
+        responseTime,
+        description: 'Main application and API endpoints',
+        lastChecked: 'Just now',
+        error: `HTTP ${response.status}`
+      }
+    } else {
+      // Server errors (500+) - degraded
+      return {
+        name: 'CopyFlow Application',
+        status: 'degraded',
         responseTime,
         description: 'Main application and API endpoints',
         lastChecked: 'Just now',

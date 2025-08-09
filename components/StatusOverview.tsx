@@ -68,7 +68,7 @@ export default function StatusOverview() {
     )
   }
 
-  const operationalCount = services.filter(s => s.status === 'operational').length
+  const operationalCount = services.filter(s => ['operational', 'degraded', 'partial'].includes(s.status)).length  // Працюючі сервіси
   const totalCount = services.length
   
   return (

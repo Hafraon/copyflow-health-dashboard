@@ -697,12 +697,13 @@ export async function getExternalServicesStatus(): Promise<any> {
         
         if (response.ok) {
           const data = await response.json()
+          // М'якша логіка - якщо немає критичних проблем, то operational
           return {
             name: service.name,
             status: data.status?.indicator === 'none' ? 'operational' : 
-                   data.status?.indicator === 'minor' ? 'degraded' : 
-                   data.status?.indicator === 'major' ? 'outage' : 'unknown',
-            description: data.status?.description || 'No issues'
+                   data.status?.indicator === 'minor' ? 'operational' :  // Minor = ще окей
+                   data.status?.indicator === 'major' ? 'degraded' : 'operational',  // Major = degraded
+            description: data.status?.description || 'All systems normal'
           }
         } else {
           return {

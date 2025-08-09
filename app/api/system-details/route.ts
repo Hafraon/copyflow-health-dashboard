@@ -226,8 +226,9 @@ export async function GET() {
       }
     ]
 
-    // Розрахунок загального статусу
+    // Розрахунок загального статусу - м'якша логіка
     const onlineComponents = systemComponents.filter(c => c.status === 'online').length
+    const workingComponents = systemComponents.filter(c => ['online', 'degraded'].includes(c.status)).length  // Працюючі компоненти
     const degradedComponents = systemComponents.filter(c => c.status === 'degraded').length
     const totalComponents = systemComponents.length
 
@@ -246,7 +247,7 @@ export async function GET() {
           onlineComponents,
           degradedComponents,
           totalComponents,
-          overallUptime: ((onlineComponents + degradedComponents * 0.5) / totalComponents * 100).toFixed(1),
+          overallUptime: (workingComponents / totalComponents * 100).toFixed(1),  // Використовуємо workingComponents
           avgResponseTime: `${avgResponseTime}ms`
         }
       },

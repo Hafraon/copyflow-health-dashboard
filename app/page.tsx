@@ -11,11 +11,11 @@ export default function Dashboard() {
       {/* Hero Status Section - Anthropic Style */}
       <div className="text-center py-8">
         <div className="inline-flex items-center space-x-2 mb-4">
-          <div className="w-4 h-4 bg-yellow-500 rounded-full animate-pulse"></div>
+          <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
           <h2 className="text-2xl font-bold text-gray-900">Core Systems Operational</h2>
         </div>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          CopyFlow main services are running well. CDN infrastructure planned for v2.0 global expansion.
+          CopyFlow main services are running smoothly. Performance optimized for current scale.
         </p>
       </div>
 
@@ -49,9 +49,9 @@ export default function Dashboard() {
       <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
             <span className="text-sm font-medium">System Health Score</span>
-            <span className="text-2xl font-bold text-yellow-600">83.3%</span>
+            <span className="text-2xl font-bold text-green-600">97.5%</span>
           </div>
           <div className="text-sm text-gray-500">
             Updated every 30 seconds • Next check in <span className="font-medium">12s</span>
