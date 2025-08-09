@@ -16,39 +16,39 @@ export async function GET() {
 
   // Test 1: Main Project Connection
   try {
-    const mainProjectUrl = process.env.MAIN_PROJECT_API_URL
-    if (mainProjectUrl) {
-      const startTime = Date.now()
-      const response = await fetch(`${mainProjectUrl}/api/health`, {
-        signal: AbortSignal.timeout(10000)
-      })
-      const responseTime = Date.now() - startTime
-      
-      results.tests.mainProject = {
-        url: mainProjectUrl,
-        status: response.status,
-        statusText: response.statusText,
-        responseTime: `${responseTime}ms`,
-        success: response.ok
-      }
-      
-      if (response.ok) {
-        try {
-          const data = await response.json()
-          results.tests.mainProject.healthData = data
-        } catch (e) {
-          results.tests.mainProject.healthData = 'Failed to parse JSON'
-        }
+    const mainProjectUrl = process.env.MAIN_PROJECT_API_URL || 'https://copyflow.pro'
+    const startTime = Date.now()
+    const response = await fetch(`${mainProjectUrl}/api/health`, {
+      signal: AbortSignal.timeout(10000)
+    })
+    const responseTime = Date.now() - startTime
+    
+    results.tests.mainProject = {
+      url: mainProjectUrl,
+      healthEndpoint: `${mainProjectUrl}/api/health`,
+      status: response.status,
+      statusText: response.statusText,
+      responseTime: `${responseTime}ms`,
+      success: response.ok
+    }
+    
+    if (response.ok) {
+      try {
+        const data = await response.json()
+        results.tests.mainProject.healthData = data
+      } catch (e) {
+        results.tests.mainProject.healthData = 'Failed to parse JSON'
       }
     } else {
-      results.tests.mainProject = {
-        error: 'MAIN_PROJECT_API_URL not configured'
-      }
+      results.tests.mainProject.recommendation = response.status === 404 ? 
+        'Health endpoint not found - add /api/health to copyflow.pro' :
+        'Health endpoint returned error - check copyflow.pro server'
     }
   } catch (error) {
     results.tests.mainProject = {
       error: error instanceof Error ? error.message : 'Connection failed',
-      url: process.env.MAIN_PROJECT_API_URL
+      url: process.env.MAIN_PROJECT_API_URL || 'https://copyflow.pro',
+      recommendation: 'Check if copyflow.pro is accessible and has /api/health endpoint'
     }
   }
 
@@ -159,19 +159,33 @@ export async function GET() {
     openAIOnline: results.tests.openAI?.success || false,
     externalServicesIssues: Object.values(results.tests.externalServices || {})
       .filter((service: any) => !service.success || service.mappedStatus !== 'operational').length,
-    recommendations: []
+    recommendations: [],
+    liveUrls: {
+      mainProject: 'https://copyflow.pro',
+      healthEndpoint: 'https://copyflow.pro/api/health',
+      liveDashboard: 'https://copyflow-health-dashboard-production.up.railway.app/',
+      diagnostics: 'https://copyflow-health-dashboard-production.up.railway.app/api/diagnose'
+    }
   }
 
   // Recommendations
   if (!results.summary.mainProjectOnline) {
-    results.summary.recommendations.push('Configure MAIN_PROJECT_API_URL with your actual CopyFlow project URL')
+    if (results.tests.mainProject?.status === 404) {
+      results.summary.recommendations.push('Add /api/health endpoint to copyflow.pro - see COPYFLOW_PRO_HEALTH_ENDPOINT.md')
+    } else {
+      results.summary.recommendations.push('Check if copyflow.pro is accessible and running properly')
+    }
   }
   if (!results.summary.openAIOnline) {
-    results.summary.recommendations.push('Configure OpenAI API credentials (OPENAI_API_KEY, OPENAI_ASSISTANT_ELITE)')
+    results.summary.recommendations.push('Configure OpenAI API credentials (OPENAI_API_KEY, OPENAI_ASSISTANT_ELITE, OPENAI_ASSISTANT_UNIVERSAL)')
   }
   if (!results.summary.databaseOnline) {
     results.summary.recommendations.push('Check DATABASE_URL configuration and database connectivity')
   }
+  
+  // Add live URLs for easy access
+  results.summary.recommendations.push('Check live dashboard: https://copyflow-health-dashboard-production.up.railway.app/')
+  results.summary.recommendations.push('Test health endpoint: https://copyflow.pro/api/health')
 
   return NextResponse.json(results, { status: 200 })
 }
