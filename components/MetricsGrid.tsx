@@ -102,7 +102,7 @@ export default function MetricsGrid() {
   }
 
   // Calculate metrics from real data
-  const getMetrics = () => {
+  const getMetrics = (): MetricCardProps[] => {
     if (!realMetrics) {
       return [
         {
@@ -130,32 +130,45 @@ export default function MetricsGrid() {
     const totalServices = services?.length || 0
     const availability = totalServices > 0 ? ((operationalServices / totalServices) * 100).toFixed(1) : '0.0'
     
+    // Helper function to ensure proper typing
+    const getStatus = (condition: boolean, warningCondition: boolean): 'good' | 'warning' | 'critical' => {
+      if (condition) return 'critical'
+      if (warningCondition) return 'warning'
+      return 'good'
+    }
+    
     return [
       {
         title: 'Database Response',
         value: dbResponseTime,
-        status: dbResponseTime !== 'N/A' && parseInt(dbResponseTime) > 100 ? 'warning' : 'good' as const,
+        status: dbResponseTime !== 'N/A' && parseInt(dbResponseTime) > 100 ? 
+          getStatus(parseInt(dbResponseTime) > 500, parseInt(dbResponseTime) > 100) : 'good',
         icon: <Database className="w-5 h-5 text-blue-600" />,
         description: 'PostgreSQL query response time'
       },
       {
         title: 'OpenAI Latency', 
         value: openaiLatency,
-        status: openaiLatency !== 'N/A' && parseInt(openaiLatency) > 2000 ? 'warning' : 'good' as const,
+        status: openaiLatency !== 'N/A' && parseInt(openaiLatency) > 2000 ? 
+          getStatus(parseInt(openaiLatency) > 5000, parseInt(openaiLatency) > 2000) : 'good',
         icon: <Zap className="w-5 h-5 text-purple-600" />,
         description: 'AI assistant response time'
       },
       {
         title: 'Service Availability',
         value: `${availability}%`,
-        status: parseFloat(availability) < 100 ? 'warning' : 'good' as const,
+        status: getStatus(parseFloat(availability) < 50, parseFloat(availability) < 100),
         icon: <CheckCircle className="w-5 h-5 text-green-600" />,
         description: `${operationalServices}/${totalServices} services operational`
       },
       {
         title: 'System Health',
         value: systemData?.summary?.overallUptime ? `${systemData.summary.overallUptime}%` : 'N/A',
-        status: systemData?.summary?.overallUptime && parseFloat(systemData.summary.overallUptime) < 95 ? 'warning' : 'good' as const,
+        status: systemData?.summary?.overallUptime ? 
+          getStatus(
+            parseFloat(systemData.summary.overallUptime) < 90, 
+            parseFloat(systemData.summary.overallUptime) < 95
+          ) : 'warning',
         icon: <Activity className="w-5 h-5 text-indigo-600" />,
         description: 'Overall system health score'
       }
