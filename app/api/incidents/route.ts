@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     })
     
     // Transform to frontend format
-    const incidents = incidentLogs.map(log => ({
+    const incidents = incidentLogs.map((log: any) => ({
       id: log.id,
       title: log.title,
       description: log.description || '',
@@ -48,20 +48,20 @@ export async function GET(request: Request) {
     // Calculate summary
     const summary = {
       total: incidents.length,
-      active: incidents.filter(i => i.status !== 'resolved').length,
-      resolved: incidents.filter(i => i.status === 'resolved').length,
-      critical: incidents.filter(i => i.severity === 'critical').length,
+      active: incidents.filter((i: any) => i.status !== 'resolved').length,
+      resolved: incidents.filter((i: any) => i.status === 'resolved').length,
+      critical: incidents.filter((i: any) => i.severity === 'critical').length,
       byStatus: {
-        investigating: incidents.filter(i => i.status === 'investigating').length,
-        identified: incidents.filter(i => i.status === 'identified').length, 
-        monitoring: incidents.filter(i => i.status === 'monitoring').length,
-        resolved: incidents.filter(i => i.status === 'resolved').length
+        investigating: incidents.filter((i: any) => i.status === 'investigating').length,
+        identified: incidents.filter((i: any) => i.status === 'identified').length, 
+        monitoring: incidents.filter((i: any) => i.status === 'monitoring').length,
+        resolved: incidents.filter((i: any) => i.status === 'resolved').length
       },
       bySeverity: {
-        info: incidents.filter(i => i.severity === 'info').length,
-        warning: incidents.filter(i => i.severity === 'warning').length,
-        error: incidents.filter(i => i.severity === 'error').length,
-        critical: incidents.filter(i => i.severity === 'critical').length
+        info: incidents.filter((i: any) => i.severity === 'info').length,
+        warning: incidents.filter((i: any) => i.severity === 'warning').length,
+        error: incidents.filter((i: any) => i.severity === 'error').length,
+        critical: incidents.filter((i: any) => i.severity === 'critical').length
       }
     }
     

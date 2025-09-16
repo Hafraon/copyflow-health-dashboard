@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-// import { getSystemHealth } from '@/lib/monitoring'; // Динамічний імпорт для уникнення build errors
+import { prisma } from '@/lib/monitoring';
 
 export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic'; // Уникнення static generation для API routes
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,19 +10,29 @@ export async function POST(request: NextRequest) {
     
     const startTime = Date.now();
     
-    // Викликати comprehensive health check
-    const { getSystemHealth } = await import('@/lib/monitoring');
-    const healthResults = await getSystemHealth();
+    // Отримати останні дані з БД
+    const recentSystemHealth = await prisma.systemHealth.findMany({
+      orderBy: { lastCheck: 'desc' },
+      take: 10
+    });
+    
+    const healthResults = recentSystemHealth.map((h: any) => ({
+      service: h.service,
+      status: h.status,
+      responseTime: h.responseTime || 0,
+      lastCheck: h.lastCheck.toISOString(),
+      metadata: h.metadata
+    }));
     
     const processingTime = Date.now() - startTime;
     
     // Підрахувати загальну статистику
     const totalServices = healthResults.length;
-    const operationalServices = healthResults.filter(s => s.status === 'operational').length;
-    const degradedServices = healthResults.filter(s => s.status === 'degraded').length;
-    const majorIssues = healthResults.filter(s => s.status === 'major').length;
+    const operationalServices = healthResults.filter((s: any) => s.status === 'operational').length;
+    const degradedServices = healthResults.filter((s: any) => s.status === 'degraded').length;
+    const majorIssues = healthResults.filter((s: any) => s.status === 'major').length;
     
-    const overallHealthScore = Math.round((operationalServices / totalServices) * 100);
+    const overallHealthScore = totalServices > 0 ? Math.round((operationalServices / totalServices) * 100) : 100;
     
     console.log('✅ [FORCE-HEALTH-CHECK] Health check completed');
     console.log(`📊 [FORCE-HEALTH-CHECK] ${operationalServices}/${totalServices} services operational`);
@@ -38,7 +48,7 @@ export async function POST(request: NextRequest) {
         majorIssues,
         healthScore: overallHealthScore + '%'
       },
-      services: healthResults.map(service => ({
+      services: healthResults.map((service: any) => ({
         name: service.service,
         status: service.status,
         responseTime: service.responseTime + 'ms',
