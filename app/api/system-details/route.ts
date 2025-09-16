@@ -59,7 +59,8 @@ async function checkWayForPayAPI(): Promise<{value: string, status: string}> {
   } catch (error) {
     console.error('WayForPay API check failed:', error)
     // Якщо CORS блокує - припускаємо що сервіс працює
-    if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('CORS') || message.includes('Failed to fetch')) {
       return { value: 'Gateway Protected (CORS)', status: 'good' }
     }
     return { value: 'Check Failed', status: 'error' }
@@ -84,7 +85,8 @@ async function checkGoogleOAuthAPI(): Promise<{value: string, status: string}> {
   } catch (error) {
     console.error('Google OAuth API check failed:', error)
     // Fallback припущення
-    if (error.message.includes('CORS') || error.message.includes('Failed to fetch')) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('CORS') || message.includes('Failed to fetch')) {
       return { value: 'OAuth Protected (CORS)', status: 'good' }
     }
     return { value: 'Check Failed', status: 'error' }
