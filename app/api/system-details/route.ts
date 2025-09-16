@@ -1,6 +1,105 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/monitoring'
 
+// ✅ РЕАЛЬНІ ПЕРЕВІРКИ ЗОВНІШНІХ ЗАЛЕЖНОСТЕЙ
+async function checkOpenAIAPI(): Promise<{value: string, status: string}> {
+  try {
+    const response = await fetch('https://status.openai.com/api/v2/status.json', {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(5000)
+    })
+    
+    if (!response.ok) throw new Error('OpenAI status check failed')
+    
+    const data = await response.json()
+    return {
+      value: data.status?.description === 'All Systems Operational' ? 'Operational' : 'Issues Detected',
+      status: data.status?.indicator === 'none' ? 'good' : 'warning'
+    }
+  } catch (error) {
+    return { value: 'Check Failed', status: 'error' }
+  }
+}
+
+async function checkWayForPayAPI(): Promise<{value: string, status: string}> {
+  try {
+    // WayForPay не має публічного статус API, тому робимо просту перевірку доступності
+    const response = await fetch('https://secure.wayforpay.com/', {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(5000)
+    })
+    
+    return {
+      value: response.ok ? 'Gateway Available' : 'Gateway Issues',
+      status: response.ok ? 'good' : 'warning'
+    }
+  } catch (error) {
+    return { value: 'Check Failed', status: 'error' }
+  }
+}
+
+async function checkGoogleOAuthAPI(): Promise<{value: string, status: string}> {
+  try {
+    // Перевіряємо доступність Google OAuth discovery document
+    const response = await fetch('https://accounts.google.com/.well-known/openid_configuration', {
+      method: 'GET',
+      signal: AbortSignal.timeout(5000)
+    })
+    
+    if (!response.ok) throw new Error('Google OAuth check failed')
+    
+    const data = await response.json()
+    return {
+      value: data.issuer ? 'OAuth Available' : 'OAuth Issues',
+      status: data.issuer ? 'good' : 'warning'
+    }
+  } catch (error) {
+    return { value: 'Check Failed', status: 'error' }
+  }
+}
+
+async function checkRailwayPlatform(): Promise<{value: string, status: string}> {
+  try {
+    const response = await fetch('https://status.railway.app/', {
+      method: 'HEAD',
+      signal: AbortSignal.timeout(5000)
+    })
+    
+    return {
+      value: response.ok ? 'Platform Available' : 'Platform Issues',
+      status: response.ok ? 'good' : 'warning'
+    }
+  } catch (error) {
+    return { value: 'Check Failed', status: 'error' }
+  }
+}
+
+async function checkAllExternalDependencies() {
+  const [openai, wayforpay, googleAuth, railway] = await Promise.all([
+    checkOpenAIAPI(),
+    checkWayForPayAPI(),
+    checkGoogleOAuthAPI(),
+    checkRailwayPlatform()
+  ])
+  
+  // Визначаємо загальний статус
+  const allChecks = [openai, wayforpay, googleAuth, railway]
+  const errorCount = allChecks.filter(check => check.status === 'error').length
+  const warningCount = allChecks.filter(check => check.status === 'warning').length
+  
+  let overallStatus: string
+  if (errorCount > 1) {
+    overallStatus = 'offline'
+  } else if (errorCount === 1 || warningCount > 1) {
+    overallStatus = 'degraded'
+  } else {
+    overallStatus = 'online'
+  }
+  
+  return { openai, wayforpay, googleAuth, railway, overallStatus }
+}
+
 // Force dynamic for Prisma
 export const dynamic = 'force-dynamic'
 
@@ -36,6 +135,9 @@ export async function GET() {
     const successRate = logsData.length > 0 ? 
       Math.round((logsData.filter((log: any) => log.success).length / logsData.length) * 100) : 
       98
+
+    // Перевірка зовнішніх залежностей
+    const externalDeps = await checkAllExternalDependencies()
 
     const systemComponents = [
       {
@@ -124,31 +226,31 @@ export async function GET() {
       },
       {
         icon: 'Globe',
-        title: 'External APIs',
-        status: 'degraded',
+        title: 'External Dependencies', // ✅ ТІЛЬКИ РЕАЛЬНІ КРИТИЧНІ ЗАЛЕЖНОСТІ
+        status: externalDeps.overallStatus,
         details: [
           { 
-            label: 'CDN Status', 
-            value: 'Planned for v2.0', 
-            status: 'warning'
+            label: 'OpenAI API Status', 
+            value: externalDeps.openai.value, 
+            status: externalDeps.openai.status
           },
           { 
-            label: 'Railway Status', 
-            value: 'Operational', 
-            status: 'good'
+            label: 'WayForPay Gateway', 
+            value: externalDeps.wayforpay.value, 
+            status: externalDeps.wayforpay.status
           },
           { 
-            label: 'OpenAI Status', 
-            value: 'Operational', 
-            status: 'good'
+            label: 'Google OAuth Service', 
+            value: externalDeps.googleAuth.value, 
+            status: externalDeps.googleAuth.status
           },
           { 
-            label: 'Global Performance', 
-            value: `${Math.floor(80 + Math.random() * 50)}ms`, 
-            status: 'good'
+            label: 'Hosting Platform', 
+            value: externalDeps.railway.value, 
+            status: externalDeps.railway.status
           }
         ],
-        lastUpdate: '1m ago'
+        lastUpdate: 'Real-time'
       },
       {
         icon: 'Shield',
