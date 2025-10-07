@@ -147,12 +147,12 @@ export default function MetricsGrid() {
         description: 'PostgreSQL query response time'
       },
       {
-        title: 'OpenAI Latency', 
+        title: 'AI Response Time',
         value: openaiLatency,
-        status: openaiLatency !== 'N/A' && parseInt(openaiLatency) > 2000 ? 
-          getStatus(parseInt(openaiLatency) > 5000, parseInt(openaiLatency) > 2000) : 'good',
+        status: openaiLatency !== 'N/A' && parseInt(openaiLatency) > 40000 ? 
+          getStatus(parseInt(openaiLatency) > 60000, parseInt(openaiLatency) > 40000) : 'good',
         icon: <Zap className="w-5 h-5 text-purple-600" />,
-        description: 'AI assistant response time'
+        description: 'OpenAI Assistants response time'
       },
       {
         title: 'Service Availability',
